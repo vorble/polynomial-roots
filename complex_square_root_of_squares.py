@@ -11,6 +11,15 @@ For real z, the computational rule is:
     If z >= 0, then sqrt(z**2) = z.
     If z < 0, then sqrt(z**2) = -z.
 
+This is also true for IEEE 754 floating point numbers which has two distinct
+values for zero, 0.0 and -0.0. These zeros are equal, however, and are both
+covered by the first case where z >= 0 since z = -z for either value of zero.
+
+There are three other special IEEE floating point values: positive infinity,
+negative infinity, and not-a-number. These are denoted inf, -inf, and nan
+in Python. inf is covered under the first case and -inf is covered under the
+second. nan is not covered under any case, but sqrt(nan**2) is nan.
+
 For complex z, what are the rules? This program evaluates sqrt(z**2) and looks
 for cases where sqrt(z**2) != z.
 
@@ -19,16 +28,20 @@ complex plane where sqrt(z**2) != z. Most dots will be blue, indicating the
 inequality. Dots along the imaginary axis will be red indicating that the value
 has Re(z) = -0 which produces a different sqrt(z**2) than when Rx(z) = 0.
 
-The rules appear to be:
+Looking at the graph, the rules appear to be based on the real value:
 
-    If Re(z) >= 0 and Re(z) != -0, then sqrt(z**2) = z.
-    If Re(z) < 0 and Re(z) == -0, then sqrt(z**2) = -z.
+    If Re(z) >= 0, then sqrt(z**2) = z.
+    If Re(z) < 0, then sqrt(z**2) = -z.
 
-NEXT STEPS:
+Notice that the points along the imaginary axis are colored red which indicates
+that using positive or negative zero for the real portion of that z produces
+different results. The point at zero is well behaved and doesn't get any dot.
 
-* Note that the behavior is dependant on the implementation of both complex
-  multiplication and complex square root. Find the definitions of them that
-  is used by Python and confirm these results.
+For the red dots, the value for z**2 lies along the negative portion of the
+real axis. Check out the other program complex_square_root.py which shows how
+points around the negative portion of the real axis behave under sqrt(), i.e.
+continuity when crossing that portion of the axis is not preserved under
+sqrt().
 """
 
 import numpy as np
@@ -51,6 +64,11 @@ for x in np.linspace(XMIN, XMAX, N):
         z = x + y * 1.0j
         z2 = z * z
         z0 = np.sqrt(z2)
+
+        # Handle the values along axes in a special case.
+        if abs(np.real(z)) < 0.0001 or abs(np.imag(z)) < 0.0001:
+            continue
+
         if abs(z - z0) < 0.0001:
             points.append(z)
         elif abs(z + z0) < 0.0001:
@@ -71,9 +89,31 @@ for y in np.linspace(YMIN, YMAX, N):
     z2 = complex('-0.0'+toDeltaFloat(y)+'j')
     z2square = z2 * z2
     z2again = np.sqrt(z2square)
-    if abs(z1again - z2again) < 0.0001:
-        pass
+    if abs(z1 - z1again) < 0.0001 and abs(z2 - z2again) < 0.0001:
+        points.append(z1)
+    elif abs(z1 + z1again) < 0.0001 and abs(z2 + z2again) < 0.0001:
+        pointsNeg.append(z1)
     elif abs(z1 - z1again) < 0.0001 and abs(z2 + z2again) < 0.0001:
+        pointsNeg2.append(z1)
+    elif abs(z1 + z1again) < 0.0001 and abs(z2 - z2again) < 0.0001:
+        pointsNeg2.append(z1)
+    else:
+        raise Exception('Sqrt gave strange result.')
+
+for x in np.linspace(XMIN, XMAX, N):
+    z1 = complex(toDeltaFloat(x)+'+0.0j')
+    z1square = z1 * z1
+    z1again = np.sqrt(z1square)
+    z2 = complex(toDeltaFloat(x)+'-0.0j')
+    z2square = z2 * z2
+    z2again = np.sqrt(z2square)
+    if abs(z1 - z1again) < 0.0001 and abs(z2 - z2again) < 0.0001:
+        points.append(z1)
+    elif abs(z1 + z1again) < 0.0001 and abs(z2 + z2again) < 0.0001:
+        pointsNeg.append(z1)
+    elif abs(z1 - z1again) < 0.0001 and abs(z2 + z2again) < 0.0001:
+        pointsNeg2.append(z1)
+    elif abs(z1 + z1again) < 0.0001 and abs(z2 - z2again) < 0.0001:
         pointsNeg2.append(z1)
     else:
         raise Exception('Sqrt gave strange result.')
